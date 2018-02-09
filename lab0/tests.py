@@ -119,6 +119,7 @@ def count_pattern_3_testanswer(ans, original_val = None):
     if original_val == None:
         original_val = answers['count_pattern_3_random']
         
+    print ans
     return ( len(original_val[1])/5 == ans )
 
 count_pattern_3_expected = "an integer between 1 and 10 (this test is randomly generated)"

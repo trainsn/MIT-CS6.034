@@ -174,5 +174,40 @@ def do_multiply(expr1, expr2):
     '*' will not help you.
     """
     # Replace this with your solution.
-    raise NotImplementedError
+    #raise NotImplementedError
+    terms = []
+    result = []
+    if isinstance(expr1, Sum) and isinstance(expr2, Sum):
+        for term1 in expr1:
+            for term2 in expr2:
+               factors = [term1, term2];
+               terms += Product([factors]).simplify(); 
+        return Sum(terms).simplify()                            
+    elif isinstance(expr1, Product) and isinstance(expr2, Sum): 
+        #for term2 in expr2:
+        #    factors=list(expr1)
+        #    factors.append(term2)     
+        #    terms +=  Product([factors]).simplify(); 
+        #return Sum(terms).simplify()
+        for elem in expr2:
+            result.append(Product([elem,expr1]).simplify())
+        return Sum(result).simplify() 
+    elif isinstance(expr2, Product) and isinstance(expr1, Sum): 
+        #for term1 in expr1:
+        #    factors = list(expr2)
+        #    factors.append(term1)    
+        #    terms +=  Product([factors]).simplify();  
+        #return Sum(terms).simplify() 
+        for elem in expr1:
+            result.append(Product([elem,expr2]).simplify())
+        return Sum(result).simplify() 
+    elif isinstance(expr1, Product) and isinstance(expr2, Product): 
+        for elem in expr1:
+            result.append(elem)
+        for elem in expr2:
+            result.append(elem)
+    return Product(result);                       
 
+#print simplify_if_possible(Sum([Sum([1,2,3])]))    
+#expr = Product([1, Sum([3, 1])]);        
+#expr.simplify()
