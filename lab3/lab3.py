@@ -14,7 +14,7 @@ from util import INFINITY
 #      1. MM will play better than AB.
 #      2. AB will play better than MM.
 #      3. They will play with the same level of skill.
-ANSWER1 = 0
+ANSWER1 = 3
 
 # 1.2. Two computerized players are playing a game with a time limit. Player MM
 # does minimax search with iterative deepening, and player AB does alpha-beta
@@ -24,7 +24,7 @@ ANSWER1 = 0
 #   1. MM will play better than AB.
 #   2. AB will play better than MM.
 #   3. They will play with the same level of skill.
-ANSWER2 = 0
+ANSWER2 = 2
 
 ### 2. Connect Four
 from connectfour import *
@@ -57,7 +57,23 @@ def focused_evaluate(board):
     A return value >= 1000 means that the current player has won;
     a return value <= -1000 means that the current player has lost
     """    
-    raise NotImplementedError
+    score = 0 
+    
+    if board.longest_chain(board.get_current_player_id())==4:
+        score = 2000 - board.num_tokens_on_board()
+    elif board.longest_chain(board.get_other_player_id())==4:
+        score = -2000 + board.num_tokens_on_board()
+    else:
+        score = board.longest_chain(board.get_current_player_id()) * 10
+        # Prefer having your pieces in the center of the board.
+        for row in range(6):
+            for col in range(7):
+                if board.get_cell(row, col) == board.get_current_player_id():
+                    score -= abs(3-col)
+                elif board.get_cell(row, col) == board.get_other_player_id():
+                    score += abs(3-col)   
+    return score
+    #raise NotImplementedError
 
 
 ## Create a "player" function that uses the focused_evaluate function
@@ -73,6 +89,42 @@ quick_to_win_player = lambda board: minimax(board, depth=4,
 ## counting the number of static evaluations you make.
 ##
 ## You can use minimax() in basicplayer.py as an example.
+def alpha_beta_find_board_value(nodeType, alpha, beta,
+                                board, depth, eval_fn,
+                             get_next_moves_fn=get_all_next_moves,
+                             is_terminal_fn=is_terminal):
+    """
+    Minimax helper function: Return the minimax value of a particular board,
+    given a particular depth to estimate to
+    """
+    nodeType = 'min' if nodeType is 'max' else 'max' 
+    
+    if is_terminal_fn(depth, board):
+        res =  eval_fn(board)
+        if nodeType == 'max':
+            return  res
+        else:
+            return -res
+               
+    for move, new_board in get_next_moves_fn(board):
+        val = alpha_beta_find_board_value(nodeType, alpha, beta, 
+                                               new_board, depth-1, eval_fn,
+                                            get_next_moves_fn, is_terminal_fn)
+        if nodeType == 'max':
+            if val > alpha:
+                alpha = val
+        else:
+            if val < beta:
+                beta = val
+         
+        if alpha >= beta :
+            break
+
+    if nodeType == 'max':
+        return alpha
+    else:
+        return beta
+
 def alpha_beta_search(board, depth,
                       eval_fn,
                       # NOTE: You should use get_next_moves_fn when generating
@@ -82,7 +134,23 @@ def alpha_beta_search(board, depth,
                       # for connect_four.
                       get_next_moves_fn=get_all_next_moves,
 		      is_terminal_fn=is_terminal):
-    raise NotImplementedError
+    alpha = (-1000,-1,board)
+    beta = (1000,-1,board)
+    nodeType = 'max'
+    
+    for move, new_board in get_next_moves_fn(board):
+        val =  alpha_beta_find_board_value(nodeType, alpha[0], beta[0],
+                                           new_board, depth-1, eval_fn,
+                                            get_next_moves_fn,
+                                            is_terminal_fn)
+        if val > alpha[0]:
+            alpha = (val, move, new_board)
+        if alpha[0] >= abs(beta[0]):
+            break
+    
+    #print "ALPHA-BETA: Decided on column", alpha[1], "with rating ", alpha[0]
+    return alpha[1]
+
 
 ## Now you should be able to search twice as deep in the same amount of time.
 ## (Of course, this alpha-beta-player won't work until you've defined
@@ -105,10 +173,26 @@ ab_iterative_player = lambda board: \
 ## same depth.
 
 def better_evaluate(board):
-    raise NotImplementedError
+    score = 0 
+    
+    if board.longest_chain(board.get_current_player_id())==4:
+        score = 2000 - board.num_tokens_on_board()
+    elif board.longest_chain(board.get_other_player_id())==4:
+        score = -2000 + board.num_tokens_on_board()
+    else:
+        score = board.longest_chain(board.get_current_player_id()) * 10
+        score -= board.longest_chain(board.get_other_player_id()) * 10
+        # Prefer having your pieces in the center of the board.
+        for row in range(6):
+            for col in range(7):
+                if board.get_cell(row, col) == board.get_current_player_id():
+                    score -= abs(3-col)
+                elif board.get_cell(row, col) == board.get_other_player_id():
+                    score += abs(3-col)   
+    return score
 
 # Comment this line after you've fully implemented better_evaluate
-better_evaluate = memoize(basic_evaluate)
+#better_evaluate = memoize(basic_evaluate)
 
 # Uncomment this line to make your better_evaluate run faster.
 # better_evaluate = memoize(better_evaluate)
@@ -169,12 +253,12 @@ def run_test_tree_search(search, board, depth):
 ## Do you want us to use your code in a tournament against other students? See
 ## the description in the problem set. The tournament is completely optional
 ## and has no effect on your grade.
-COMPETE = (None)
+COMPETE = (False)
 
 ## The standard survey questions.
-HOW_MANY_HOURS_THIS_PSET_TOOK = ""
-WHAT_I_FOUND_INTERESTING = ""
-WHAT_I_FOUND_BORING = ""
-NAME = ""
-EMAIL = ""
+HOW_MANY_HOURS_THIS_PSET_TOOK = "not much"
+WHAT_I_FOUND_INTERESTING = "alpha-beta"
+WHAT_I_FOUND_BORING = "None"
+NAME = "trainsn"
+EMAIL = "shaoxinxiaosai@163.com"
 
