@@ -16,8 +16,22 @@ def forward_checking(state, verbose=False):
         return False
 
     # Add your forward checking logic here.
-    
-    raise NotImplementedError
+    X = state.get_current_variable()
+    x = None
+    if X is None:
+        return True 
+    else:
+        x = X.get_assigned_value()
+        
+        constraints = state.get_constraints_by_name(X.get_name())
+        for con in constraints:
+            Y = state.get_variable_by_name(con.get_variable_i_name() if con.get_variable_i_name()!=X.get_name() else con.get_variable_j_name())
+            for y in Y.get_domain():
+                if con.check(state, x, y) == False:
+                   Y.reduce_domain(y)
+                   if Y.domain_size() == 0:
+                       return False
+    return True
 
 # Now Implement forward checking + (constraint) propagation through
 # singleton domains.
@@ -28,7 +42,30 @@ def forward_checking_prop_singleton(state, verbose=False):
         return False
 
     # Add your propagate singleton logic here.
-    raise NotImplementedError
+    queue = [x for x in state.get_all_variables() if x.domain_size() == 1 ]
+    visited = [x for x in state.get_all_variables() if x.domain_size() == 1 ]
+    #create the queue
+            
+    while (len(queue)>0):
+        X = queue[0]
+        queue = queue[1:len(queue)]
+        x = X.get_domain()[0]
+        
+        constraints = state.get_constraints_by_name(X.get_name())
+        for con in constraints:
+            Y = state.get_variable_by_name(con.get_variable_i_name() if con.get_variable_i_name()!=X.get_name() else con.get_variable_j_name())
+            for y in Y.get_domain():
+                if con.check(state, x, y) == False:
+                   Y.reduce_domain(y)
+                   if Y.domain_size() == 0:
+                       return False
+        
+            if Y.domain_size() == 1 and Y not in visited:
+                queue.append(Y)
+                visited.append(Y)
+    
+    return True                
+    #raise NotImplementedError
 
 ## The code here are for the tester
 ## Do not change.
@@ -70,7 +107,17 @@ senate_group1, senate_group2 = crosscheck_groups(senate_people)
 
 def euclidean_distance(list1, list2):
     # this is not the right solution!
-    return hamming_distance(list1, list2)
+    assert isinstance(list1, list)
+    assert isinstance(list2, list)
+
+    dist = 0
+
+    # 'zip' is a Python builtin, documented at
+    # <http://www.python.org/doc/lib/built-in-funcs.html>
+    for item1, item2 in zip(list1, list2):
+        if item1 != item2: 
+            dist += (item1-item2)*(item1-item2)
+    return math.sqrt(dist)
 
 #Once you have implemented euclidean_distance, you can check the results:
 #evaluate(nearest_neighbors(euclidean_distance, 1), senate_group1, senate_group2)
@@ -89,7 +136,43 @@ my_classifier = nearest_neighbors(hamming_distance, 1)
 ## which should lead to simpler trees.
 
 def information_disorder(yes, no):
-    return homogeneous_disorder(yes, no)
+    yesTotal = float(len(yes))
+    noTotal = float(len(no))
+
+    total = yesTotal + noTotal
+
+    yesFraction = yesTotal/total
+    noFraction = noTotal/total
+
+    yesDemocrats = float(len([ x for x in yes if x == 'Democrat']))
+    yesDemocratsFraction = yesDemocrats/yesTotal
+    yesDemocratsLog = math.log(yesDemocratsFraction,2) if yesDemocratsFraction > 0 else 0
+
+    yesIndependents = float(len([ x for x in yes if x == 'Independent']))
+    yesIndependentsFraction = yesIndependents/yesTotal
+    yesIndependentsLog = math.log(yesIndependentsFraction,2) if yesIndependentsFraction > 0 else 0
+
+    yesRepublicans = yesTotal - yesDemocrats - yesIndependents
+    yesRepublicansFraction = yesRepublicans/yesTotal
+    yesRepublicansLog = math.log(yesRepublicansFraction,2) if yesRepublicansFraction > 0 else 0
+    yesDisorder = yesFraction*( - yesDemocratsLog*yesDemocratsFraction - yesRepublicansLog*yesRepublicansFraction - yesIndependentsLog*yesIndependentsFraction)
+
+    noDemocrats = float(len([ x for x in no if x == 'Democrat']))
+    noDemocratsFraction = noDemocrats/noTotal
+    noDemocratsLog =  math.log(noDemocratsFraction,2) if noDemocratsFraction > 0 else 0
+
+    noIndependents = float(len([ x for x in no if x == 'Independent']))
+    noIndependentsFraction = noIndependents/noTotal
+    noIndependentsLog =  math.log(noIndependentsFraction,2) if noIndependentsFraction > 0 else 0
+
+    noRepublicans = noTotal - noDemocrats - noIndependents
+    noRepublicansFraction = noRepublicans/noTotal
+    noRepublicansLog =  math.log(noRepublicansFraction,2) if noRepublicansFraction > 0 else 0
+    noDisorder = noFraction*( - noDemocratsLog*noDemocratsFraction - noRepublicansLog*noRepublicansFraction - noIndependentsLog*noIndependentsFraction)
+
+    disorder = yesDisorder + noDisorder
+
+    return disorder
 
 #print CongressIDTree(senate_people, senate_votes, information_disorder)
 #evaluate(idtree_maker(senate_votes, homogeneous_disorder), senate_group1, senate_group2)
@@ -119,15 +202,15 @@ def limited_house_classifier(house_people, house_votes, n, verbose = False):
                                    
 ## Find a value of n that classifies at least 430 representatives correctly.
 ## Hint: It's not 10.
-N_1 = 10
+N_1 = 50
 rep_classified = limited_house_classifier(house_people, house_votes, N_1)
 
 ## Find a value of n that classifies at least 90 senators correctly.
-N_2 = 10
+N_2 = 80
 senator_classified = limited_house_classifier(senate_people, senate_votes, N_2)
 
 ## Now, find a value of n that classifies at least 95 of last year's senators correctly.
-N_3 = 10
+N_3 = 40
 old_senator_classified = limited_house_classifier(last_senate_people, last_senate_votes, N_3)
 
 
